@@ -17,12 +17,17 @@ jobs:
     strategy:
       matrix:
         arch: [aarch64, amd64]
+        addon:
+          - target: stellantis_vehicles
+            image: stellantis-vehicles
+          - target: stellantis_login_worker
+            image: stellantis-login-worker
     steps:
       - uses: actions/checkout@v4
 
       - name: Read add-on version
         id: version
-        run: echo "version=$(grep '^version:' stellantis_vehicles/config.yaml | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(grep '^version:' ${{ matrix.addon.target }}/config.yaml | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
@@ -38,7 +43,7 @@ jobs:
           args: |
             ${{ github.event_name == 'pull_request' && '--test' || '' }} \
             --${{ matrix.arch }} \
-            --target stellantis_vehicles \
-            --image stellantis-vehicles-${{ matrix.arch }} \
+            --target ${{ matrix.addon.target }} \
+            --image ${{ matrix.addon.image }}-${{ matrix.arch }} \
             --docker-hub ghcr.io/${{ github.repository_owner }} \
             --addon

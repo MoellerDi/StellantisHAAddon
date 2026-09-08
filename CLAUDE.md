@@ -95,9 +95,26 @@ Container zusammenfasst. Fahrzeuge kommen per MQTT Discovery nach HA.
 - Eigene UI-Texte (`web/server.py`, `web/setup.py`) sind weiterhin nur de/en; andere Sprachen sehen Englisch.
 - Test: `tests/smoke_i18n.py`.
 
+## Zweites Add-on: stellantis_login_worker
+Schlanker Login-Dienst für alle, die die HACS-Integration behalten und nur deren
+"Login service URL" auf die eigene Box zeigen lassen wollen. Bewusst ein zweites Add-on im
+selben Repository (eine Store-URL für beides), kein eigenes Repo.
+- `app/server.py`: aiohttp, spricht das Wire-Format des Community-Dienstes `worker-v2`
+  (`POST /` → `{"code": …}`, `GET /health`) und ist damit ein Drop-in-Ersatz. Vertrag verifiziert
+  gegen `stellantis.py:get_oauth_code` der Integration: Body `{url, email, password}`, Timeout 300 s,
+  die Antwort muss `code` enthalten.
+- `app/login.py`: **Kopie** von `stellantis_vehicles/app/oauth_browser/login.py` ohne Diagnose-CLI.
+  Kein gemeinsames Modul, weil der HA-Builder je Add-on-Ordner einen eigenen Build-Context nutzt.
+  Bei Änderungen am Login-Flow beide Kopien pflegen.
+- Aus `worker-v2` stammt **kein** Code — das Repo hat keine Lizenzdatei, also alle Rechte vorbehalten.
+- `boot: manual`, Port 3000, ein Login zur Zeit (Lock), Chromium pro Request auf und wieder zu.
+- Test: `stellantis_login_worker/tests/smoke_worker.py` (20 Checks, ohne Netz).
+- CI-Matrix ist jetzt zweidimensional (arch × addon), Image `stellantis-login-worker-{arch}`.
+
 ## Stand
 Schritte 1–5 umgesetzt: Bridge, UI, Runtime, lokaler Build, CI-Build für beide Architekturen, Review-Fixes.
-Echter Login + Statusabruf des e-Rifters verifiziert. Repo/Pakete public. Offen: Installation auf dem Pi.
+Echter Login + Statusabruf des e-Rifters verifiziert. Repo/Pakete public.
+Neu: zweites Add-on `stellantis_login_worker` 0.1.0 — HTTP-Vertrag getestet, live noch nicht gelaufen.
 
 ## Nächste Schritte
 6. Auf dem Pi: Add-on-Store → Repositories →

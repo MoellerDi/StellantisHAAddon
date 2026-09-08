@@ -1,10 +1,17 @@
 # Stellantis HA Add-ons
 
-Home Assistant add-on repository with a single add-on: **Stellantis Vehicles**.
-It bundles the HACS integration [homeassistant-stellantis-vehicles](https://github.com/andreadegiovine/homeassistant-stellantis-vehicles)
-and its OAuth login worker in one container. Vehicle data reaches Home Assistant via
-MQTT discovery; the browser login runs locally inside the add-on instead of on a
-third-party server.
+Home Assistant add-on repository with two add-ons. Both keep the Stellantis login on
+your own hardware instead of a third-party server; pick the one that fits your setup,
+you do not need both.
+
+**Stellantis Vehicles** bundles the HACS integration
+[homeassistant-stellantis-vehicles](https://github.com/andreadegiovine/homeassistant-stellantis-vehicles)
+and its OAuth login in one container. Vehicle data reaches Home Assistant via MQTT
+discovery, HACS is not needed.
+
+**Stellantis Login Worker** is the small alternative: keep the HACS integration as it
+is and point its *Login service URL* at this add-on, so only the login moves to your
+machine. See `stellantis_login_worker/DOCS.md`.
 
 Supported brands are the ones the upstream integration supports: Peugeot, Citroën, DS,
 Opel and Vauxhall (the former PSA apps). Fiat, Jeep, Alfa Romeo and the other FCA brands
@@ -23,8 +30,9 @@ mentioned here are trademarks of Stellantis N.V. and its subsidiaries. Use at yo
 Settings → Add-ons → Add-on Store → ⋮ → Repositories →
 `https://github.com/taubenhorst/StellantisHAAddon`
 
-Requirements: the Mosquitto broker add-on and the MQTT integration in Home Assistant,
-Home Assistant 2025.10 or newer.
+Both add-ons then appear in the store. **Stellantis Vehicles** requires the Mosquitto
+broker add-on, the MQTT integration and Home Assistant 2025.10 or newer.
+**Stellantis Login Worker** has no requirements beyond the HACS integration it serves.
 
 ## Layout
 
@@ -41,10 +49,22 @@ stellantis_vehicles/
     ├── bridge/               MQTT discovery bridge
     ├── oauth_browser/        Playwright login (clean-room)
     └── web/                  ingress UI (login, OTP, status)
+
+stellantis_login_worker/
+├── config.yaml / build.yaml / Dockerfile     add-on packaging
+├── rootfs/etc/services.d/loginworker/run    s6 service
+├── tests/smoke_worker.py                    offline test of the HTTP contract
+└── app/
+    ├── server.py            aiohttp service, worker-v2 wire format
+    └── login.py             copy of oauth_browser/login.py, without its CLI
 ```
 
 Design principle: the upstream code stays untouched, its Home Assistant dependencies are
 provided by `hass_shim/`. Upstream fixes can therefore be taken over by copying files.
+
+`stellantis_login_worker/app/login.py` is a copy, not a shared module: the add-on
+builder uses each add-on folder as its own build context, so it cannot reach outside.
+Keep the two copies in sync when the Stellantis login flow changes.
 
 ## Development
 
@@ -61,15 +81,21 @@ Offline tests (no network, no broker):
 python tests/smoke_bridge.py
 python tests/smoke_web.py
 python tests/smoke_runtime.py
+cd ../stellantis_login_worker && python tests/smoke_worker.py
 ```
 
 Local image build: `docker build --build-arg BUILD_VERSION=0.1.0 -t stellantis-vehicles:dev stellantis_vehicles`.
-CI builds aarch64 and amd64 images and pushes them to GHCR.
+CI builds aarch64 and amd64 images of both add-ons and pushes them to GHCR.
 
 ## Status
 
-Working end to end (login, OTP, vehicle status, MQTT discovery), images are built by CI —
-see `stellantis_vehicles/CHANGELOG.md`. Not yet tested in long-term operation on a Pi.
+**Stellantis Vehicles** works end to end (login, OTP, vehicle status, MQTT discovery),
+images are built by CI — see `stellantis_vehicles/CHANGELOG.md`. Not yet tested in
+long-term operation on a Pi.
+
+**Stellantis Login Worker** is new in 0.1.0. Its HTTP contract is covered by offline
+tests, but it has not yet been run against the live Stellantis login as a standalone
+add-on — the same login code is what the other add-on uses in production.
 
 ## License
 
