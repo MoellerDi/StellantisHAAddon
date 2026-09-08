@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the Stellantis Login Worker.
+# ==============================================================================
+set -e
+
+export LOG_LEVEL="$(bashio::config 'log_level')"
+export WORKER_TIMEOUT="$(bashio::config 'timeout')"
+
+bashio::log.info "Starting Stellantis Login Worker on port 3000"
+exec python3 /app/server.py
