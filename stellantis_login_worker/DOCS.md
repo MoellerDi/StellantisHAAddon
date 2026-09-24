@@ -81,6 +81,11 @@ locked. The message contains the text of the page the login stopped on.
 but the redirect never arrived. Set `log_level` to `debug` and try again; the
 log then lists every URL that was seen.
 
+**`IntegrationNotFound: Integration 'stellantis_vehicles' not found` in the
+Home Assistant log** — the add-on announced itself, but the integration is not
+installed. Home Assistant logs this on every add-on start and every restart.
+Install the integration via HACS, or stop the add-on if you do not need it.
+
 **The add-on does not start on a Raspberry Pi** — Chromium needs a few hundred
 MB while a login is running. Stop other memory-hungry add-ons, or run the
 login once from a stronger machine.

@@ -115,6 +115,9 @@ selben Repository (eine Store-URL für beides), kein eigenes Repo.
   `source=hassio` für die Domain; die Upstream-Integration braucht dafür `async_step_hassio` (eigener PR).
   Der Supervisor listet Meldungen nur für gestartete Add-ons. Host-Port 3000 ist seit 0.2.0 standardmäßig
   aus (`null`), HA erreicht den Worker intern.
+  Live auf dem Pi verifiziert (24.09.2026): Meldung kommt an, Flow `hassio_confirm` erscheint, Bestätigen setzt
+  `oauth_code_url` im Entry, erneutes Melden nach Worker-Neustart wird vom Supervisor dedupliziert (gleiche UUID).
+  Ohne installierte Integration loggt HA `IntegrationNotFound` als ERROR (HA-Verhalten, in DOCS dokumentiert).
 - Test: `stellantis_login_worker/tests/smoke_worker.py` (28 Checks, ohne Netz, inkl. Fake-Supervisor).
 - CI-Matrix ist jetzt zweidimensional (arch × addon), Image `stellantis-login-worker-{arch}`.
 
