@@ -24,25 +24,31 @@ identity provider.
 ## Installation
 
 1. Install and start the add-on.
-2. In the integration's config flow, at the **remote login** step, enter the
-   add-on's address as **Login service URL**:
+2. On start the add-on announces itself to Home Assistant (Supervisor
+   discovery). Integration versions that support this show a **Discovered**
+   card under Settings → Devices & services. Confirming it fills in the
+   **Login service URL** for you — for a new account as well as for accounts
+   that are already set up.
+3. With an integration version that does not support discovery yet, enter the
+   URL by hand at the **remote login** step. The add-on log prints it on
+   start:
 
    ```
-   http://<home-assistant-ip>:3000
+   Announced to Home Assistant as http://0e0578fd-stellantis-login-worker:3000
    ```
 
-   `homeassistant.local` works too if your network resolves it.
-3. Complete the login. Afterwards you can stop the add-on again — it is only
+   The hostname is the add-on's name on the internal Supervisor network; the
+   prefix depends on the repository URL and may differ on your system.
+4. Complete the login. Afterwards you can stop the add-on again — it is only
    needed for the initial login and for re-authentication, which is why it is
    set to start manually.
 
-Check that it is reachable with:
-
-```bash
-curl http://<home-assistant-ip>:3000/health
-```
-
-which answers `{"status": "ok"}`.
+The port is not published on the host by default, because Home Assistant does
+not need it. If something outside Home Assistant should call the worker, set a
+host port under the add-on's **Network** settings and use
+`http://<home-assistant-ip>:<port>`; `curl http://<home-assistant-ip>:<port>/health`
+then answers `{"status": "ok"}`. Note that the worker has no authentication of
+its own.
 
 ## Options
 

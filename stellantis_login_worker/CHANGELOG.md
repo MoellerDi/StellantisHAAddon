@@ -1,3 +1,18 @@
+## 0.2.0
+
+- Supervisor discovery: on start the add-on announces itself as service
+  `stellantis_vehicles` with its internal hostname and port, so the integration
+  can take over the Login service URL without typing it in
+  (`app/discovery.py`; best effort, a failure is logged and the worker still
+  starts)
+- The add-on log prints the internal URL, for integration versions without
+  discovery support
+- **Breaking:** port 3000 is no longer published on the host by default. Home
+  Assistant reaches the worker via `http://<hostname>:3000` on the internal
+  network. If you used `http://<home-assistant-ip>:3000`, either switch to the
+  internal URL or set the host port again under the add-on's Network settings
+- `tests/smoke_worker.py`: 8 more checks against a fake Supervisor (28 total)
+
 ## 0.1.0
 
 First version.

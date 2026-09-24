@@ -1,5 +1,5 @@
 name: Stellantis Login Worker
-version: 0.1.0
+version: 0.2.0
 slug: stellantis_login_worker
 description: Local OAuth login service for the homeassistant-stellantis-vehicles integration
 url: https://github.com/taubenhorst/StellantisHAAddon
@@ -10,10 +10,14 @@ image: ghcr.io/taubenhorst/stellantis-login-worker-{arch}
 init: false
 startup: application
 boot: manual
+discovery:
+  - stellantis_vehicles
+# Home Assistant reaches the worker over the internal Supervisor network, so
+# the port stays unpublished unless someone needs it from outside.
 ports:
-  3000/tcp: 3000
+  3000/tcp: null
 ports_description:
-  3000/tcp: HTTP API the integration calls (its "Login service URL")
+  3000/tcp: Only needed if something outside Home Assistant calls the worker
 options:
   log_level: info
   timeout: 60

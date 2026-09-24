@@ -22,6 +22,7 @@ import os
 
 from aiohttp import web
 
+import discovery
 from login import OauthBrowserError, fetch_oauth_code
 
 _LOGGER = logging.getLogger("loginworker")
@@ -81,10 +82,20 @@ async def handle_health(request: web.Request) -> web.Response:
     return web.json_response({"status": "ok"})
 
 
-def create_app() -> web.Application:
+async def announce_on_startup(app: web.Application) -> None:
+    # Best effort: without discovery the URL can still be entered by hand.
+    try:
+        await discovery.announce(PORT)
+    except Exception as err:  # noqa: BLE001 - never keep the worker from starting
+        _LOGGER.warning("Supervisor discovery failed: %s", err)
+
+
+def create_app(announce: bool = False) -> web.Application:
     app = web.Application()
     app.router.add_post("/", handle_login)
     app.router.add_get("/health", handle_health)
+    if announce:
+        app.on_startup.append(announce_on_startup)
     return app
 
 
@@ -95,7 +106,7 @@ def main() -> None:
     )
     _LOGGER.info("Stellantis Login Worker %s listening on port %d",
                  os.environ.get("ADDON_VERSION", "dev"), PORT)
-    web.run_app(create_app(), host="0.0.0.0", port=PORT, print=None)
+    web.run_app(create_app(announce=True), host="0.0.0.0", port=PORT, print=None)
 
 
 if __name__ == "__main__":

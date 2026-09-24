@@ -108,13 +108,20 @@ selben Repository (eine Store-URL für beides), kein eigenes Repo.
   Bei Änderungen am Login-Flow beide Kopien pflegen.
 - Aus `worker-v2` stammt **kein** Code — das Repo hat keine Lizenzdatei, also alle Rechte vorbehalten.
 - `boot: manual`, Port 3000, ein Login zur Zeit (Lock), Chromium pro Request auf und wieder zu.
-- Test: `stellantis_login_worker/tests/smoke_worker.py` (20 Checks, ohne Netz).
+- Ab 0.2.0 Supervisor-Discovery (`app/discovery.py`): beim Start `GET /addons/self/info` → `hostname`,
+  dann `POST /discovery` mit `service: stellantis_vehicles`, `config: {host, port: 3000}`. Braucht nur
+  `discovery:` in der config.yaml (kein `hassio_api`, `/discovery` und `/addons/self/*` sind freigegeben;
+  der Supervisor prüft Service-Namen nicht mehr gegen eine Liste). HA macht daraus einen Config-Flow
+  `source=hassio` für die Domain; die Upstream-Integration braucht dafür `async_step_hassio` (eigener PR).
+  Der Supervisor listet Meldungen nur für gestartete Add-ons. Host-Port 3000 ist seit 0.2.0 standardmäßig
+  aus (`null`), HA erreicht den Worker intern.
+- Test: `stellantis_login_worker/tests/smoke_worker.py` (28 Checks, ohne Netz, inkl. Fake-Supervisor).
 - CI-Matrix ist jetzt zweidimensional (arch × addon), Image `stellantis-login-worker-{arch}`.
 
 ## Stand
 Schritte 1–5 umgesetzt: Bridge, UI, Runtime, lokaler Build, CI-Build für beide Architekturen, Review-Fixes.
 Echter Login + Statusabruf des e-Rifters verifiziert. Repo/Pakete public.
-Neu: zweites Add-on `stellantis_login_worker` 0.1.0 — HTTP-Vertrag getestet, live noch nicht gelaufen.
+Zweites Add-on `stellantis_login_worker` 0.2.0 (mit Supervisor-Discovery) — HTTP-Vertrag getestet, live noch nicht gelaufen.
 
 ## Nächste Schritte
 6. Auf dem Pi: Add-on-Store → Repositories →

@@ -13,8 +13,10 @@ import sys
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app")
 sys.path.insert(0, APP_DIR)
 
+from aiohttp import web  # noqa: E402
 from aiohttp.test_utils import TestClient, TestServer  # noqa: E402
 
+import discovery  # noqa: E402
 import server  # noqa: E402
 from login import OauthBrowserError  # noqa: E402
 
@@ -28,6 +30,62 @@ def check(condition: bool, what: str) -> None:
     print(("  ok   " if condition else "  FAIL ") + what)
     if not condition:
         failures.append(what)
+
+
+async def discovery_checks() -> None:
+    """Announce against a fake Supervisor that mimics /addons/self/info and
+    /discovery, including its {"result": ..., "data": ...} envelope."""
+    seen: list[dict] = []
+    refuse = False
+
+    async def self_info(request):
+        seen.append({"path": "info", "auth": request.headers.get("Authorization")})
+        return web.json_response({"result": "ok", "data": {
+            "slug": "0e0578fd_stellantis_login_worker",
+            "hostname": "0e0578fd-stellantis-login-worker"}})
+
+    async def post_discovery(request):
+        seen.append({"path": "discovery", "auth": request.headers.get("Authorization"),
+                     "body": await request.json()})
+        if refuse:
+            return web.json_response({"result": "error", "message": "not listed"}, status=403)
+        return web.json_response({"result": "ok", "data": {"uuid": "abc123"}})
+
+    fake = web.Application()
+    fake.router.add_get("/addons/self/info", self_info)
+    fake.router.add_post("/discovery", post_discovery)
+
+    print("supervisor discovery")
+    os.environ.pop("SUPERVISOR_TOKEN", None)
+    async with TestServer(fake) as supervisor:
+        base = str(supervisor.make_url("/"))
+
+        check(await discovery.announce(3000, base_url=base) is None, "no token -> skipped")
+        check(not seen, "no token -> Supervisor not contacted")
+
+        config = await discovery.announce(3000, token="tkn", base_url=base)
+        check(config == {"host": "0e0578fd-stellantis-login-worker", "port": 3000},
+              "announced config is internal hostname + port")
+        check(all(s["auth"] == "Bearer tkn" for s in seen), "Supervisor token sent as bearer")
+        body = seen[-1].get("body", {})
+        check(body.get("service") == "stellantis_vehicles", "service is the integration's domain")
+        check(body.get("config") == config, "discovery body carries the config")
+
+        refuse = True
+        try:
+            await discovery.announce(3000, token="tkn", base_url=base)
+            check(False, "refused discovery raises")
+        except discovery.DiscoveryError as err:
+            check("403" in str(err), "refused discovery raises with status")
+
+        # The startup hook must swallow the error so the worker still serves.
+        os.environ["SUPERVISOR_TOKEN"] = "tkn"
+        os.environ["SUPERVISOR_URL"] = base
+        try:
+            await server.announce_on_startup(web.Application())
+            check(True, "startup hook survives a refused discovery")
+        finally:
+            del os.environ["SUPERVISOR_TOKEN"], os.environ["SUPERVISOR_URL"]
 
 
 async def main() -> int:
@@ -111,6 +169,8 @@ async def main() -> int:
         for res in await asyncio.gather(first, second):
             check(res.status == 200, "queued request answered with 200")
         check(not overlap, "only one login runs at a time")
+
+    await discovery_checks()
 
     print()
     if failures:

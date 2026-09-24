@@ -56,6 +56,7 @@ stellantis_login_worker/
 ├── tests/smoke_worker.py                    offline test of the HTTP contract
 └── app/
     ├── server.py            aiohttp service, worker-v2 wire format
+    ├── discovery.py         announces the worker to Home Assistant (Supervisor discovery)
     └── login.py             copy of oauth_browser/login.py, without its CLI
 ```
 
