@@ -93,7 +93,9 @@ login once from a stronger machine.
 
 ## Security
 
-Port 3000 is open on your Home Assistant host and is not authenticated —
-anyone on your network could send it a login request of their own (with their
-own credentials; it will not reveal yours). Keeping the add-on stopped except
-during logins avoids this entirely.
+The worker is not authenticated. Since 0.2.0 its port is only reachable on the
+internal Supervisor network (Home Assistant and other add-ons), not from your
+LAN. If you publish a host port under **Network**, anyone on your network
+could send it a login request of their own (with their own credentials; it
+will not reveal yours). Keeping the add-on stopped except during logins
+avoids this entirely.
