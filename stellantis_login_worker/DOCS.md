@@ -28,7 +28,8 @@ identity provider.
    discovery). Integration versions that support this show a **Discovered**
    card under Settings → Devices & services. Confirming it fills in the
    **Login service URL** for you — for a new account as well as for accounts
-   that are already set up.
+   that still use the default login service. Accounts that point to a custom
+   login service on purpose stay unchanged.
 3. With an integration version that does not support discovery yet, enter the
    URL by hand at the **remote login** step. The add-on log prints it on
    start:

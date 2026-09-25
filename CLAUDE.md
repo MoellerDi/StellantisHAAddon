@@ -118,6 +118,10 @@ selben Repository (eine Store-URL für beides), kein eigenes Repo.
   Live auf dem Pi verifiziert (24.09.2026): Meldung kommt an, Flow `hassio_confirm` erscheint, Bestätigen setzt
   `oauth_code_url` im Entry, erneutes Melden nach Worker-Neustart wird vom Supervisor dedupliziert (gleiche UUID).
   Ohne installierte Integration loggt HA `IntegrationNotFound` als ERROR (HA-Verhalten, in DOCS dokumentiert).
+  Review MoellerDi zu PR #645 (25.09.2026): `flow_title` ist `{name}` (gilt für alle Flow-Karten der Domain, Reauth
+  liefert nur `name` → `{addon}` gab „Translation Error“); Bestätigen stellt nur Accounts mit Standard-Dienst
+  (`oauth_code_url` fehlt oder = `OAUTH_CODE_URL`) um, eigene Worker bleiben. Kein Account mehr umzustellen →
+  `already_configured`, damit die Karte beim Discovery-Replay nach jedem Neustart nicht wiederkommt.
 - Test: `stellantis_login_worker/tests/smoke_worker.py` (28 Checks, ohne Netz, inkl. Fake-Supervisor).
 - CI-Matrix ist jetzt zweidimensional (arch × addon), Image `stellantis-login-worker-{arch}`.
 
